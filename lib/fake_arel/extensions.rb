@@ -30,8 +30,15 @@ module ActiveRecord
     end
 
     class Scope
-      undef select
       undef from
+
+      def select(value = Proc.new)
+        if block_given?
+          all.select {|*block_args| value.call(*block_args) }
+        else
+          self.scoped(:select => Array.wrap(value).join(','))
+        end
+      end
 
       alias initialize_without_arel initialize
       def initialize(proxy_scope, options = {}, &block)

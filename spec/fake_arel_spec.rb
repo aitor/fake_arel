@@ -227,11 +227,29 @@ describe "Fake Arel" do
     Author.or(q1,q2).all.map(&:id).should == [1]
   end
 
-  it "should use select like rails 3 uses select" do
+  it "should respect Array#select and Scope#select traditional block use" do
     lambda { Reply.all.select {|r| r.id == 1 }}.should_not raise_error
-    Reply.all.select {|r| r.id == 1 }.size.should == 1
-    Reply.all.select {|r| r.id == 1 }.first.id.should == 1
+    replies = Reply.all.select {|r| r.id == 1 }
+    replies.size.should == 1
+    replies.first.id.should == 1
+
+    lambda { Topic.find(4).replies.recent.select {|r| r.id == 5 }}.should_not raise_error
+    replies = Topic.find(4).replies.recent.select {|r| r.id == 5 }
+    replies.size.should == 1
+    replies.first.id.should == 5
+  end
+
+  it "should provide Model#select and Scope#select for Rails 3 use" do
+    lambda { Reply.select(:id).first}.should_not raise_error
     lambda { Reply.select(:id).first.content }.should raise_error(ActiveRecord::MissingAttributeError)
+    Reply.select(:id).first.id.should == 1
+    Reply.select(:id).first.attributes.keys.should == ["id"]
+
+
+    lambda { Topic.find(4).replies.recent.select(:id).first}.should_not raise_error
+    lambda { Topic.find(4).replies.recent.select(:id).first.content }.should raise_error(ActiveRecord::MissingAttributeError)
+    Topic.find(4).replies.recent.select(:id).first.id.should == 5
+    Topic.find(4).replies.recent.select(:id).first.attributes.keys.should == ["id"]
   end
 
   it "should respond to batch_find" do
